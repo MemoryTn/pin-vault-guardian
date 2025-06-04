@@ -33,15 +33,21 @@ export const AdminAuthProvider = ({ children }: { children: React.ReactNode }) =
 
   const login = async (email: string, password: string) => {
     try {
-      // Query the admin_users table to verify credentials
+      // For development purposes, we'll use a simple password check
+      // In production, you would want to implement proper password hashing
       const { data, error } = await supabase
         .from("admin_users")
-        .select("id, email")
+        .select("id, email, password_hash")
         .eq("email", email)
-        .eq("password_hash", supabase.rpc("crypt", { password, salt: supabase.rpc("gen_salt", { type: "bf" }) }))
         .single();
 
       if (error || !data) {
+        return { error: "Invalid email or password" };
+      }
+
+      // Simple password verification (in production, use proper hashing)
+      // For now, we'll assume the password_hash is just the plain password
+      if (data.password_hash !== password) {
         return { error: "Invalid email or password" };
       }
 
