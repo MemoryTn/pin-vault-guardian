@@ -11,7 +11,7 @@ const Index = () => {
             Com-Sci 2025 Welcoming Orientation
           </h1>
           <p className="text-xl text-blue-200 opacity-90">
-            กรอก Pins เพื่อรับคำใบ้
+            กรอก PIN เพื่อรับคำใบ้
           </p>
         </div>
         
@@ -55,7 +55,7 @@ const Index = () => {
           <div className="flex flex-col items-center space-y-4">
             <div className="inline-flex items-center space-x-2 text-blue-200/60">
               <Shield className="w-5 h-5" />
-              <span className="text-sm">ตรวจสอบ Pins</span>
+              <span className="text-sm">ตรวจสอบ PIN</span>
             </div>
             
             <Link 
