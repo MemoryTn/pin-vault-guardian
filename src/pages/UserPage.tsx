@@ -4,15 +4,13 @@ import { Link } from "react-router-dom";
 import { ArrowLeft, Lock, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const UserPage = () => {
   const [pin, setPin] = useState("");
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<"success" | "error" | null>(null);
   const { toast } = useToast();
-
-  // Mock PIN database - in real app this would be from backend
-  const validPins = ["123456", "654321", "111111", "000000"];
 
   const handleNumberClick = (number: string) => {
     if (pin.length < 6) {
@@ -38,24 +36,40 @@ const UserPage = () => {
 
     setIsChecking(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      if (validPins.includes(pin)) {
-        setResult("success");
-        toast({
-          title: "สำเร็จ!",
-          description: "รหัส PIN ถูกต้อง",
-        });
-      } else {
+    try {
+      // Check if PIN exists in the database
+      const { data, error } = await supabase
+        .from("pin_codes")
+        .select("pin_code")
+        .eq("pin_code", pin)
+        .eq("is_active", true)
+        .single();
+
+      if (error || !data) {
         setResult("error");
         toast({
           title: "ไม่สำเร็จ",
           description: "รหัส PIN ไม่ถูกต้อง",
           variant: "destructive",
         });
+      } else {
+        setResult("success");
+        toast({
+          title: "สำเร็จ!",
+          description: "รหัส PIN ถูกต้อง",
+        });
       }
-      setIsChecking(false);
-    }, 1000);
+    } catch (error) {
+      console.error("Error checking PIN:", error);
+      setResult("error");
+      toast({
+        title: "ข้อผิดพลาด",
+        description: "เกิดข้อผิดพลาดในการตรวจสอบ",
+        variant: "destructive",
+      });
+    }
+    
+    setIsChecking(false);
   };
 
   const numbers = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0"];

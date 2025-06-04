@@ -1,21 +1,60 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Shield, Plus, Trash2, Eye, EyeOff, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAdminAuth } from "@/hooks/useAdminAuth";
+import { supabase } from "@/integrations/supabase/client";
 import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 
+interface PinCode {
+  id: string;
+  pin_code: string;
+  is_active: boolean;
+  created_at: string;
+}
+
 const AdminPageContent = () => {
-  const [pins, setPins] = useState(["123456", "654321", "111111", "000000"]);
+  const [pins, setPins] = useState<PinCode[]>([]);
   const [newPin, setNewPin] = useState("");
   const [showPins, setShowPins] = useState(false);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { adminUser, logout } = useAdminAuth();
 
-  const handleAddPin = () => {
+  // Fetch PIN codes from database
+  const fetchPins = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("pin_codes")
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+
+      if (error) {
+        console.error("Error fetching pins:", error);
+        toast({
+          title: "ข้อผิดพลาด",
+          description: "ไม่สามารถโหลดรหัส PIN ได้",
+          variant: "destructive",
+        });
+      } else {
+        setPins(data || []);
+      }
+    } catch (error) {
+      console.error("Error fetching pins:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPins();
+  }, []);
+
+  const handleAddPin = async () => {
     if (newPin.length !== 6) {
       toast({
         title: "ข้อผิดพลาด",
@@ -34,7 +73,7 @@ const AdminPageContent = () => {
       return;
     }
 
-    if (pins.includes(newPin)) {
+    if (pins.some(pin => pin.pin_code === newPin)) {
       toast({
         title: "ข้อผิดพลาด",
         description: "รหัส PIN นี้มีอยู่ในระบบแล้ว",
@@ -43,20 +82,65 @@ const AdminPageContent = () => {
       return;
     }
 
-    setPins(prev => [...prev, newPin]);
-    setNewPin("");
-    toast({
-      title: "สำเร็จ!",
-      description: "เพิ่มรหัส PIN ใหม่แล้ว",
-    });
+    try {
+      const { error } = await supabase
+        .from("pin_codes")
+        .insert([{ pin_code: newPin }]);
+
+      if (error) {
+        console.error("Error adding PIN:", error);
+        toast({
+          title: "ข้อผิดพลาด",
+          description: "ไม่สามารถเพิ่มรหัส PIN ได้",
+          variant: "destructive",
+        });
+      } else {
+        setNewPin("");
+        fetchPins(); // Refresh the list
+        toast({
+          title: "สำเร็จ!",
+          description: "เพิ่มรหัส PIN ใหม่แล้ว",
+        });
+      }
+    } catch (error) {
+      console.error("Error adding PIN:", error);
+      toast({
+        title: "ข้อผิดพลาด",
+        description: "เกิดข้อผิดพลาดในการเพิ่มรหัส PIN",
+        variant: "destructive",
+      });
+    }
   };
 
-  const handleDeletePin = (pinToDelete: string) => {
-    setPins(prev => prev.filter(pin => pin !== pinToDelete));
-    toast({
-      title: "สำเร็จ!",
-      description: "ลบรหัส PIN แล้ว",
-    });
+  const handleDeletePin = async (pinId: string, pinCode: string) => {
+    try {
+      const { error } = await supabase
+        .from("pin_codes")
+        .update({ is_active: false })
+        .eq("id", pinId);
+
+      if (error) {
+        console.error("Error deleting PIN:", error);
+        toast({
+          title: "ข้อผิดพลาด",
+          description: "ไม่สามารถลบรหัส PIN ได้",
+          variant: "destructive",
+        });
+      } else {
+        fetchPins(); // Refresh the list
+        toast({
+          title: "สำเร็จ!",
+          description: "ลบรหัส PIN แล้ว",
+        });
+      }
+    } catch (error) {
+      console.error("Error deleting PIN:", error);
+      toast({
+        title: "ข้อผิดพลาด",
+        description: "เกิดข้อผิดพลาดในการลบรหัส PIN",
+        variant: "destructive",
+      });
+    }
   };
 
   const formatPin = (pin: string) => {
@@ -66,6 +150,14 @@ const AdminPageContent = () => {
   const handleLogout = () => {
     logout();
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 flex items-center justify-center">
+        <div className="text-white">กำลังโหลด...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 p-4">
@@ -161,17 +253,17 @@ const AdminPageContent = () => {
           <div className="space-y-3">
             {pins.map((pin, index) => (
               <div
-                key={pin}
+                key={pin.id}
                 className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10"
               >
                 <div className="flex items-center space-x-4">
                   <span className="text-sm text-blue-200">#{index + 1}</span>
                   <span className="text-white font-mono text-lg tracking-widest">
-                    {formatPin(pin)}
+                    {formatPin(pin.pin_code)}
                   </span>
                 </div>
                 <Button
-                  onClick={() => handleDeletePin(pin)}
+                  onClick={() => handleDeletePin(pin.id, pin.pin_code)}
                   variant="outline"
                   size="sm"
                   className="border-red-300/30 text-red-300 hover:bg-red-500/10 hover:border-red-300"

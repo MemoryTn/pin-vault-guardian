@@ -33,6 +33,30 @@ export type Database = {
         }
         Relationships: []
       }
+      pin_codes: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          pin_code: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pin_code: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pin_code?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
