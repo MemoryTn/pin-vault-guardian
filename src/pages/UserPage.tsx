@@ -142,7 +142,19 @@ const UserPage = () => {
 
           {/* แสดง Description เมื่อ success */}
           {result === "success" && pinDescription && (
-            <p className="text-center text-green-300 mb-6">{pinDescription}</p>
+            <p
+              className="
+                text-center 
+                text-green-400 
+                text-lg md:text-xl 
+                font-extrabold 
+                mb-6 
+                drop-shadow-lg
+                animate-pulse
+              "
+            >
+              {pinDescription}
+            </p>
           )}
 
           {/* Number Keypad */}
