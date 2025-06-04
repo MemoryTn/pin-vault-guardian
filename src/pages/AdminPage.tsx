@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Shield, Plus, Trash2, Eye, EyeOff, LogOut } from "lucide-react";
@@ -12,6 +11,7 @@ import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 interface PinCode {
   id: string;
   pin_code: string;
+  description: Text | null;
   is_active: boolean;
   created_at: string;
 }
@@ -19,12 +19,12 @@ interface PinCode {
 const AdminPageContent = () => {
   const [pins, setPins] = useState<PinCode[]>([]);
   const [newPin, setNewPin] = useState("");
+  const [newDescription, setNewDescription] = useState("");
   const [showPins, setShowPins] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { adminUser, logout } = useAdminAuth();
 
-  // Fetch PIN codes from database
   const fetchPins = async () => {
     try {
       const { data, error } = await supabase
@@ -85,7 +85,7 @@ const AdminPageContent = () => {
     try {
       const { error } = await supabase
         .from("pin_codes")
-        .insert([{ pin_code: newPin }]);
+        .insert([{ pin_code: newPin, description: newDescription }]);
 
       if (error) {
         console.error("Error adding PIN:", error);
@@ -96,7 +96,8 @@ const AdminPageContent = () => {
         });
       } else {
         setNewPin("");
-        fetchPins(); // Refresh the list
+        setNewDescription("");
+        fetchPins();
         toast({
           title: "สำเร็จ!",
           description: "เพิ่มรหัส PIN ใหม่แล้ว",
@@ -112,7 +113,7 @@ const AdminPageContent = () => {
     }
   };
 
-  const handleDeletePin = async (pinId: string, pinCode: string) => {
+  const handleDeletePin = async (pinId: string) => {
     try {
       const { error } = await supabase
         .from("pin_codes")
@@ -127,7 +128,7 @@ const AdminPageContent = () => {
           variant: "destructive",
         });
       } else {
-        fetchPins(); // Refresh the list
+        fetchPins();
         toast({
           title: "สำเร็จ!",
           description: "ลบรหัส PIN แล้ว",
@@ -143,9 +144,7 @@ const AdminPageContent = () => {
     }
   };
 
-  const formatPin = (pin: string) => {
-    return showPins ? pin : "••••••";
-  };
+  const formatPin = (pin: string) => (showPins ? pin : "••••••");
 
   const handleLogout = () => {
     logout();
@@ -191,7 +190,7 @@ const AdminPageContent = () => {
           </div>
         </div>
 
-        {/* Stats Card */}
+        {/* Stats */}
         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 mb-8">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 bg-purple-500/20 rounded-full flex items-center justify-center">
@@ -207,7 +206,7 @@ const AdminPageContent = () => {
         {/* Add New PIN */}
         <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 mb-8">
           <h3 className="text-lg font-semibold text-white mb-4">เพิ่มรหัส PIN ใหม่</h3>
-          <div className="flex space-x-4">
+          <div className="space-y-2 mb-2">
             <Input
               type="text"
               placeholder="ใส่รหัส PIN 6 หลัก"
@@ -216,14 +215,21 @@ const AdminPageContent = () => {
               className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
               maxLength={6}
             />
-            <Button
-              onClick={handleAddPin}
-              className="bg-green-600 hover:bg-green-700 text-white px-6"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              เพิ่ม
-            </Button>
+            <Input
+              type="text"
+              placeholder="คำอธิบาย (optional)"
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              className="bg-white/10 border-white/30 text-white placeholder:text-white/50"
+            />
           </div>
+          <Button
+            onClick={handleAddPin}
+            className="bg-green-600 hover:bg-green-700 text-white px-6"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            เพิ่ม
+          </Button>
         </div>
 
         {/* PIN List */}
@@ -254,25 +260,27 @@ const AdminPageContent = () => {
             {pins.map((pin, index) => (
               <div
                 key={pin.id}
-                className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10"
+                className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 bg-white/5 rounded-lg border border-white/10"
               >
-                <div className="flex items-center space-x-4">
+                <div className="flex flex-col">
                   <span className="text-sm text-blue-200">#{index + 1}</span>
                   <span className="text-white font-mono text-lg tracking-widest">
                     {formatPin(pin.pin_code)}
                   </span>
+                  {pin.description && (
+                    <span className="text-white/70 text-sm mt-1">{pin.description}</span>
+                  )}
                 </div>
                 <Button
-                  onClick={() => handleDeletePin(pin.id, pin.pin_code)}
+                  onClick={() => handleDeletePin(pin.id)}
                   variant="outline"
                   size="sm"
-                  className="border-red-300/30 text-red-300 hover:bg-red-500/10 hover:border-red-300"
+                  className="border-red-300/30 text-red-300 hover:bg-red-500/10 hover:border-red-300 mt-2 sm:mt-0"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
               </div>
             ))}
-            
             {pins.length === 0 && (
               <div className="text-center py-8">
                 <p className="text-white/60">ยังไม่มีรหัส PIN ในระบบ</p>
@@ -285,12 +293,10 @@ const AdminPageContent = () => {
   );
 };
 
-const AdminPage = () => {
-  return (
-    <AdminProtectedRoute>
-      <AdminPageContent />
-    </AdminProtectedRoute>
-  );
-};
+const AdminPage = () => (
+  <AdminProtectedRoute>
+    <AdminPageContent />
+  </AdminProtectedRoute>
+);
 
 export default AdminPage;

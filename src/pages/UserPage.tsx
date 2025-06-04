@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Lock, Check, X } from "lucide-react";
@@ -10,18 +9,21 @@ const UserPage = () => {
   const [pin, setPin] = useState("");
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<"success" | "error" | null>(null);
+  const [description, setDescription] = useState<Text | null>(null); // เพิ่มเพื่อเก็บ text
   const { toast } = useToast();
 
   const handleNumberClick = (number: string) => {
     if (pin.length < 6) {
       setPin(prev => prev + number);
       setResult(null);
+      setDescription(null);
     }
   };
 
   const handleClear = () => {
     setPin("");
     setResult(null);
+    setDescription(null);
   };
 
   const handleCheck = async () => {
@@ -35,18 +37,18 @@ const UserPage = () => {
     }
 
     setIsChecking(true);
-    
+
     try {
-      // Check if PIN exists in the database
       const { data, error } = await supabase
         .from("pin_codes")
-        .select("pin_code")
+        .select("pin_code, text") // ดึง text มาด้วย
         .eq("pin_code", pin)
         .eq("is_active", true)
         .single();
 
       if (error || !data) {
         setResult("error");
+        setDescription(null);
         toast({
           title: "ไม่สำเร็จ",
           description: "รหัส PIN ไม่ถูกต้อง",
@@ -54,6 +56,7 @@ const UserPage = () => {
         });
       } else {
         setResult("success");
+        setDescription(data.text ?? null); // เก็บ description (หรือ null ถ้าไม่มี)
         toast({
           title: "สำเร็จ!",
           description: "รหัส PIN ถูกต้อง",
@@ -62,13 +65,14 @@ const UserPage = () => {
     } catch (error) {
       console.error("Error checking PIN:", error);
       setResult("error");
+      setDescription(null);
       toast({
         title: "ข้อผิดพลาด",
         description: "เกิดข้อผิดพลาดในการตรวจสอบ",
         variant: "destructive",
       });
     }
-    
+
     setIsChecking(false);
   };
 
@@ -122,7 +126,7 @@ const UserPage = () => {
 
           {/* Result Icon */}
           {result && (
-            <div className="flex justify-center mb-6">
+            <div className="flex justify-center mb-4">
               {result === "success" ? (
                 <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center animate-scale-in">
                   <Check className="w-6 h-6 text-white" />
@@ -132,6 +136,13 @@ const UserPage = () => {
                   <X className="w-6 h-6 text-white" />
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Show description if available */}
+          {result === "success" && description && (
+            <div className="text-center text-green-300 font-medium mb-6">
+              {description}
             </div>
           )}
 
