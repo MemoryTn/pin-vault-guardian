@@ -9,21 +9,21 @@ const UserPage = () => {
   const [pin, setPin] = useState("");
   const [isChecking, setIsChecking] = useState(false);
   const [result, setResult] = useState<"success" | "error" | null>(null);
-  const [description, setDescription] = useState<Text | null>(null); // เพิ่มเพื่อเก็บ text
+  const [pinDescription, setPinDescription] = useState<Text | null>(null); // เพิ่ม state สำหรับ description
   const { toast } = useToast();
 
   const handleNumberClick = (number: string) => {
     if (pin.length < 6) {
       setPin(prev => prev + number);
       setResult(null);
-      setDescription(null);
+      setPinDescription(null); // reset description
     }
   };
 
   const handleClear = () => {
     setPin("");
     setResult(null);
-    setDescription(null);
+    setPinDescription(null);
   };
 
   const handleCheck = async () => {
@@ -37,18 +37,19 @@ const UserPage = () => {
     }
 
     setIsChecking(true);
-
+    
     try {
+      // ดึง description มาด้วย
       const { data, error } = await supabase
         .from("pin_codes")
-        .select("pin_code, text") // ดึง text มาด้วย
+        .select("pin_code, description")  // ดึง description ด้วย
         .eq("pin_code", pin)
         .eq("is_active", true)
         .single();
 
       if (error || !data) {
         setResult("error");
-        setDescription(null);
+        setPinDescription(null);
         toast({
           title: "ไม่สำเร็จ",
           description: "รหัส PIN ไม่ถูกต้อง",
@@ -56,23 +57,23 @@ const UserPage = () => {
         });
       } else {
         setResult("success");
-        setDescription(data.text ?? null); // เก็บ description (หรือ null ถ้าไม่มี)
+        setPinDescription(data.description ?? null); // เก็บ description จาก DB
         toast({
           title: "สำเร็จ!",
-          description: "รหัส PIN ถูกต้อง",
+          description: data.description ?? "รหัส PIN ถูกต้อง",
         });
       }
     } catch (error) {
       console.error("Error checking PIN:", error);
       setResult("error");
-      setDescription(null);
+      setPinDescription(null);
       toast({
         title: "ข้อผิดพลาด",
         description: "เกิดข้อผิดพลาดในการตรวจสอบ",
         variant: "destructive",
       });
     }
-
+    
     setIsChecking(false);
   };
 
@@ -126,7 +127,7 @@ const UserPage = () => {
 
           {/* Result Icon */}
           {result && (
-            <div className="flex justify-center mb-4">
+            <div className="flex justify-center mb-6">
               {result === "success" ? (
                 <div className="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center animate-scale-in">
                   <Check className="w-6 h-6 text-white" />
@@ -139,11 +140,9 @@ const UserPage = () => {
             </div>
           )}
 
-          {/* Show description if available */}
-          {result === "success" && description && (
-            <div className="text-center text-green-300 font-medium mb-6">
-              {description}
-            </div>
+          {/* แสดง Description เมื่อ success */}
+          {result === "success" && pinDescription && (
+            <p className="text-center text-green-300 mb-6">{pinDescription}</p>
           )}
 
           {/* Number Keypad */}
