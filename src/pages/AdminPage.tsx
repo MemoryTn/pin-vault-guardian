@@ -1,16 +1,19 @@
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Shield, Plus, Trash2, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Shield, Plus, Trash2, Eye, EyeOff, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useAdminAuth } from "@/hooks/useAdminAuth";
+import AdminProtectedRoute from "@/components/AdminProtectedRoute";
 
-const AdminPage = () => {
+const AdminPageContent = () => {
   const [pins, setPins] = useState(["123456", "654321", "111111", "000000"]);
   const [newPin, setNewPin] = useState("");
   const [showPins, setShowPins] = useState(false);
   const { toast } = useToast();
+  const { adminUser, logout } = useAdminAuth();
 
   const handleAddPin = () => {
     if (newPin.length !== 6) {
@@ -60,6 +63,10 @@ const AdminPage = () => {
     return showPins ? pin : "••••••";
   };
 
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-800 p-4">
       <div className="max-w-2xl mx-auto">
@@ -68,7 +75,28 @@ const AdminPage = () => {
             <ArrowLeft className="w-6 h-6" />
           </Link>
           <h1 className="text-2xl font-bold text-white">ผู้คุมระบบ</h1>
-          <div className="w-6"></div>
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            size="sm"
+            className="border-red-300/30 text-red-300 hover:bg-red-500/10 hover:border-red-300"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            ออกจากระบบ
+          </Button>
+        </div>
+
+        {/* Welcome Message */}
+        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-6 mb-8">
+          <div className="flex items-center space-x-4">
+            <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">
+              <Shield className="w-6 h-6 text-green-300" />
+            </div>
+            <div>
+              <h2 className="text-lg font-semibold text-white">ยินดีต้อนรับ</h2>
+              <p className="text-green-200">{adminUser?.email}</p>
+            </div>
+          </div>
         </div>
 
         {/* Stats Card */}
@@ -162,6 +190,14 @@ const AdminPage = () => {
         </div>
       </div>
     </div>
+  );
+};
+
+const AdminPage = () => {
+  return (
+    <AdminProtectedRoute>
+      <AdminPageContent />
+    </AdminProtectedRoute>
   );
 };
 

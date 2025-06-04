@@ -1,6 +1,6 @@
 
 import { Link } from "react-router-dom";
-import { Shield, Users } from "lucide-react";
+import { Shield, Users, Lock } from "lucide-react";
 
 const Index = () => {
   return (
@@ -52,9 +52,19 @@ const Index = () => {
         </div>
 
         <div className="text-center mt-12">
-          <div className="inline-flex items-center space-x-2 text-blue-200/60">
-            <Shield className="w-5 h-5" />
-            <span className="text-sm">ระบบรักษาความปลอดภัยขั้นสูง</span>
+          <div className="flex flex-col items-center space-y-4">
+            <div className="inline-flex items-center space-x-2 text-blue-200/60">
+              <Shield className="w-5 h-5" />
+              <span className="text-sm">ระบบรักษาความปลอดภัยขั้นสูง</span>
+            </div>
+            
+            <Link 
+              to="/admin/login" 
+              className="inline-flex items-center space-x-2 text-purple-300/60 hover:text-purple-200 transition-colors text-sm"
+            >
+              <Lock className="w-4 h-4" />
+              <span>เข้าสู่ระบบผู้คุม</span>
+            </Link>
           </div>
         </div>
       </div>
